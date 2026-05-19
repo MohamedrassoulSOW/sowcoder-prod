@@ -8,6 +8,7 @@
     "dev:server": "php backend/bin/console lexik:jwt:generate-keypair --skip-if-exists && php backend/bin/console doctrine:migrations:migrate --no-interaction && php backend/bin/console app:ensure-admin && php -S localhost:3001 -t backend/public backend/public/router.php",
     "dev:all": "concurrently -n web,api -c cyan,magenta \"npm run dev\" \"npm run dev:server\"",
     "build": "vite build",
+    "build:prod": "npm run build && node scripts/sync-dist-to-public.mjs",
     "start": "php backend/bin/console lexik:jwt:generate-keypair --skip-if-exists && php backend/bin/console doctrine:migrations:migrate --no-interaction && php backend/bin/console app:ensure-admin && php -S localhost:3001 -t backend/public backend/public/router.php",
     "backend:cache": "php backend/bin/console cache:clear",
     "backend:routes": "php backend/bin/console debug:router",
