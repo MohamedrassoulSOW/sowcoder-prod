@@ -1,0 +1,23 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+    http_method_override: false
+    handle_all_throwables: true
+
+    serializer:
+        enabled: true
+
+    property_info:
+        enabled: true
+
+when@dev:
+    framework:
+        profiler: { only_exceptions: false }
+
+when@test:
+    framework:
+        test: true
+        profiler: { collect: false }
+
+when@prod:
+    framework:
+        profiler: { collect: false }

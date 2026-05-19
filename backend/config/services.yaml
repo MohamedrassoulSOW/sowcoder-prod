@@ -1,0 +1,35 @@
+parameters:
+    app.data_dir: '%kernel.project_dir%/../server/data'
+    app.content_path: '%app.data_dir%/site-content.json'
+    app.uploads_dir: '%app.data_dir%/uploads'
+    app.dist_path: '%kernel.project_dir%/../dist'
+    app.contact_email: '%env(CONTACT_EMAIL)%'
+    app.admin_api_key: ''
+    app.admin_email: '%env(ADMIN_EMAIL)%'
+    app.admin_password: '%env(ADMIN_PASSWORD)%'
+    app.admin_name: '%env(ADMIN_NAME)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            $kernelDebug: '%kernel.debug%'
+            $contentPath: '%app.content_path%'
+            $uploadsDir: '%app.uploads_dir%'
+            $adminApiKey: '%app.admin_api_key%'
+            $adminEmail: '%app.admin_email%'
+            $adminPassword: '%app.admin_password%'
+            $adminName: '%app.admin_name%'
+            $contactEmail: '%app.contact_email%'
+            $smtpUser: '%env(default::SMTP_USER)%'
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    App\Controller\:
+        resource: '../src/Controller/'
+        tags: ['controller.service_arguments']
