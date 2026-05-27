@@ -45,10 +45,30 @@ CREATE TABLE IF NOT EXISTS inscriptions (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS blog_comments (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL,
+  author_name TEXT NOT NULL,
+  author_email TEXT,
+  body TEXT NOT NULL,
+  visitor_id TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS blog_likes (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL,
+  visitor_id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(slug, visitor_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_contacts_created ON contacts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_inscriptions_created ON inscriptions(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_blog_comments_slug_created ON blog_comments(slug, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_blog_likes_slug ON blog_likes(slug);
 `;
 
 export function getDb() {

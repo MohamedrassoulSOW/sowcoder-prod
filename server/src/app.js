@@ -13,6 +13,7 @@ import adminRoutes from "./routes/admin.js";
 import authRoutes from "./routes/auth.js";
 import cartRoutes from "./routes/cart.js";
 import uploadRoutes from "./routes/upload.js";
+import blogRoutes from "./routes/blog.js";
 import fs from "node:fs";
 import { getDb } from "./db/database.js";
 
@@ -71,6 +72,7 @@ app.use("/api/inscriptions", formLimiter, inscriptionRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api/auth", formLimiter, authRoutes);
 app.use("/api/cart", formLimiter, cartRoutes);
+app.use("/api/blog", formLimiter, blogRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/upload", uploadRoutes);
 app.use(

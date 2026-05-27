@@ -1,89 +1,73 @@
-# Déploiement Hostinger — SowCoder
+# Mise en ligne Hostinger — SowCoder
 
-## Cause de la page blanche
-
-Si la console affiche une erreur sur **`main.jsx`** avec le type MIME `text/plain`, vous avez déployé les **fichiers sources** (développement) au lieu du **build de production**.
-
-Le bon `index.html` doit charger :
-
-```html
-<script type="module" crossorigin src="/assets/index-xxxxx.js"></script>
-```
-
-et **pas** `/src/main.jsx`.
-
-## Build production (obligatoire)
-
-Sur votre PC, à la racine du projet :
+## Commande unique (sur votre PC)
 
 ```bash
 npm ci
 npm run build:prod
 ```
 
-Cela génère `dist/` puis copie tout dans `backend/public/` (avec `.htaccess`).
+Vérifie que `backend/public/index.html` charge `/assets/....js` (pas `/src/main.jsx`).
 
-## Fichiers à envoyer sur Hostinger
+---
 
-**Document root** = contenu du dossier `backend/public/` :
-
-| Fichier / dossier | Obligatoire |
-|-------------------|-------------|
-| `index.html` | Oui (build, pas celui à la racine du repo) |
-| `assets/` | Oui (JS + CSS) |
-| `favicon.svg` | Oui |
-| `index.php` | Oui (API Symfony) |
-| `.htaccess` | Oui |
-
-**Aussi hors de public** (structure typique) :
+## Arborescence sur Hostinger
 
 ```
-/home/.../domains/ms.sowcoder.com/
-  public_html/          ← contenu de backend/public/
-  backend/              ← reste de Symfony (src, config, vendor, var…)
-  server/data/          ← site-content.json + uploads/ (droits écriture)
+domains/ms.sowcoder.com/
+├── public_html/              ← CONTENU de backend/public/ (document root)
+│   ├── index.html            ← build React
+│   ├── assets/               ← JS + CSS
+│   ├── favicon.svg
+│   ├── index.php             ← API Symfony
+│   └── .htaccess
+├── backend/                  ← Symfony (hors web si possible)
+│   ├── bin/
+│   ├── config/
+│   ├── public/               ← copie identique ou symlink vers public_html
+│   ├── src/
+│   ├── var/                  ← chmod 775 (cache, logs)
+│   └── vendor/               ← composer install --no-dev
+└── server/
+    └── data/
+        ├── site-content.json
+        └── uploads/          ← chmod 775
 ```
 
-Si tout est dans `public_html`, placez Symfony ainsi :
+Si Hostinger n’autorise qu’un seul `public_html`, mettez-y **uniquement** le contenu de `backend/public/` et placez le reste de `backend/` **au-dessus** (chemin hors `public_html`).
 
-- `public_html` = fichiers de `backend/public/`
-- `backend/` (vendor, src, config) **au-dessus** de `public_html`, hors web
+---
 
-Adaptez selon votre arborescence Hostinger (parfois `public_html` = racine du domaine).
+## Configuration backend
 
-## Variables d'environnement (backend/.env)
-
-```env
-APP_ENV=prod
-APP_DEBUG=0
-APP_SECRET=<clé longue aléatoire>
-DATABASE_URL="mysql://USER:PASS@localhost:3306/BASE?serverVersion=8.0&charset=utf8mb4"
-CORS_ALLOW_ORIGIN='^https://(www\.)?ms\.sowcoder\.com$'
-JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
-JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
-JWT_PASSPHRASE=<secret>
-ADMIN_EMAIL=admin@sowcoder.sn
-ADMIN_PASSWORD=<mot de passe fort>
-```
-
-Puis sur le serveur (SSH) :
+1. Copier `backend/.env.prod.dist` → `backend/.env`
+2. Remplir MySQL, `APP_SECRET`, `JWT_PASSPHRASE`, mots de passe admin
+3. SSH / terminal Hostinger :
 
 ```bash
 cd backend
-composer install --no-dev --optimize-autologader
+composer install --no-dev --optimize-autoloader
 php bin/console lexik:jwt:generate-keypair --skip-if-exists
 php bin/console doctrine:migrations:migrate --no-interaction --env=prod
+php bin/console app:ensure-admin --env=prod
 php bin/console cache:clear --env=prod
-chmod -R 775 var ../server/data/uploads
 ```
 
-## Vérification
+---
 
-1. https://ms.sowcoder.com/ → page d'accueil (pas blanche)
-2. https://ms.sowcoder.com/api/health → JSON `success: true`
-3. F12 → plus d'erreur sur `main.jsx`
+## Tests après upload
 
-## Ne pas déployer
+| URL | Attendu |
+|-----|---------|
+| https://ms.sowcoder.com/ | Page d’accueil |
+| https://ms.sowcoder.com/blog | Liste blog |
+| https://ms.sowcoder.com/api/health | JSON success |
+| F12 Console | Pas d’erreur `main.jsx` |
 
-- `src/`, `node_modules/`, `index.html` à la racine du repo (dev)
-- Dossier `server/` (API Node obsolète), sauf `server/data/`
+---
+
+## Erreur page blanche
+
+Cause : `index.html` de **développement** déployé (`/src/main.jsx`).
+
+Solution : `npm run build:prod` puis renvoyer **index.html** + **assets/** sur le serveur.

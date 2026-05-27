@@ -52,6 +52,24 @@ const cartCheckoutSchema = z.object({
   items: z.array(cartItemSchema).min(1, "Le panier est vide"),
 });
 
+export const blogCommentSchema = z.object({
+  authorName: z.string().trim().min(2).max(120),
+  authorEmail: z
+    .string()
+    .trim()
+    .email("Email invalide")
+    .max(200)
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  body: z.string().trim().min(3).max(5000),
+  visitorId: z.string().trim().max(120).optional().nullable(),
+});
+
+export const blogLikeSchema = z.object({
+  visitorId: z.string().trim().min(1).max(120),
+});
+
 export function validate(schema) {
   return (req, res, next) => {
     const result = schema.safeParse(req.body);

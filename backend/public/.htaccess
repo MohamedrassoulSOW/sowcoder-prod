@@ -1,35 +1,35 @@
-# SowCoder — Hostinger / Apache
+# SowCoder — Hostinger / Apache (document root = ce dossier)
 
-# Types MIME (évite "text/plain" sur les modules JS)
 <IfModule mod_mime.c>
     AddType application/javascript .js .mjs
     AddType text/css .css
     AddType image/svg+xml .svg
     AddType application/wasm .wasm
+    AddType application/json .json
 </IfModule>
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /
 
-    # Fichiers statiques existants (assets, favicon, images…)
+    # Bloquer l'accès aux sources React si elles ont été uploadées par erreur
+    RewriteRule ^src/ - [F,L]
+
+    # Fichiers statiques réels
     RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ - [L]
 
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # API Symfony + médias uploadés (hors public/uploads physique)
+    # API Symfony + fichiers uploadés (stockés hors public/)
     RewriteRule ^api(?:/|$) index.php [L,QSA]
     RewriteRule ^uploads(?:/|$) index.php [L,QSA]
 
-    # Application React (routes /blog, etc.)
+    # Application React (/, /blog, /blog/slug, …)
     RewriteRule ^ index.html [L]
 </IfModule>
 
-# Sécurité : ne pas lister les dossiers
 Options -Indexes
 
-# Front controller Symfony (si mod_rewrite désactivé sur une règle)
-<IfModule mod_negotiation.c>
-    DirectoryIndex index.html index.php
-</IfModule>
+DirectoryIndex index.html index.php

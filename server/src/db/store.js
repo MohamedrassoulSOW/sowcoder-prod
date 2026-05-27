@@ -201,3 +201,120 @@ export async function getStats() {
       .get().n,
   };
 }
+
+function normalizeVisitorId(visitorId) {
+  if (typeof visitorId !== "string") return null;
+  const v = visitorId.trim();
+  return v.length > 0 ? v.slice(0, 120) : null;
+}
+
+export async function listBlogArticles(visitorId) {
+  const content = await loadSiteContent();
+  const articles = Array.isArray(content.blogPosts) ? content.blogPosts : [];
+  const database = getDb();
+  const normalizedVisitor = normalizeVisitorId(visitorId);
+
+  return articles.map((article) => {
+    const commentCount = database
+      .prepare("SELECT COUNT(*) AS n FROM blog_comments WHERE slug = ?")
+      .get(article.slug).n;
+    const likeCount = database
+      .prepare("SELECT COUNT(*) AS n FROM blog_likes WHERE slug = ?")
+      .get(article.slug).n;
+    const liked = normalizedVisitor
+      ? Boolean(
+          database
+            .prepare(
+              "SELECT 1 FROM blog_likes WHERE slug = ? AND visitor_id = ? LIMIT 1"
+            )
+            .get(article.slug, normalizedVisitor)
+        )
+      : false;
+
+    return { ...article, commentCount, likeCount, liked };
+  });
+}
+
+export async function getBlogArticle(slug, visitorId) {
+  const articles = await listBlogArticles(visitorId);
+  return articles.find((article) => article.slug === slug) || null;
+}
+
+export async function listBlogComments(slug, { limit = 50, offset = 0 } = {}) {
+  const rows = getDb()
+    .prepare(
+      `SELECT id, slug, author_name, author_email, body, visitor_id, created_at
+       FROM blog_comments
+       WHERE slug = ?
+       ORDER BY created_at DESC
+       LIMIT ? OFFSET ?`
+    )
+    .all(slug, limit, offset);
+
+  return rows.map((r) => ({
+    id: r.id,
+    slug: r.slug,
+    authorName: r.author_name,
+    authorEmail: r.author_email,
+    body: r.body,
+    visitorId: r.visitor_id,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function addBlogComment({
+  slug,
+  authorName,
+  authorEmail,
+  body,
+  visitorId,
+}) {
+  const id = randomUUID();
+  const createdAt = now();
+
+  getDb()
+    .prepare(
+      `INSERT INTO blog_comments
+      (id, slug, author_name, author_email, body, visitor_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      id,
+      slug,
+      authorName,
+      authorEmail || null,
+      body,
+      normalizeVisitorId(visitorId),
+      createdAt
+    );
+
+  return { id, slug, authorName, authorEmail: authorEmail || null, body, createdAt };
+}
+
+export async function toggleBlogLike(slug, visitorId) {
+  const normalizedVisitor = normalizeVisitorId(visitorId);
+  if (!normalizedVisitor) {
+    throw new Error("visitorId requis");
+  }
+
+  const database = getDb();
+  const existing = database
+    .prepare("SELECT id FROM blog_likes WHERE slug = ? AND visitor_id = ?")
+    .get(slug, normalizedVisitor);
+
+  if (existing) {
+    database.prepare("DELETE FROM blog_likes WHERE id = ?").run(existing.id);
+  } else {
+    database
+      .prepare(
+        "INSERT INTO blog_likes (id, slug, visitor_id, created_at) VALUES (?, ?, ?, ?)"
+      )
+      .run(randomUUID(), slug, normalizedVisitor, now());
+  }
+
+  const likeCount = database
+    .prepare("SELECT COUNT(*) AS n FROM blog_likes WHERE slug = ?")
+    .get(slug).n;
+
+  return { liked: !existing, likeCount };
+}
