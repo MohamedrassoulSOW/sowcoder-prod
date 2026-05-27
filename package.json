@@ -10,6 +10,7 @@
     "build": "vite build",
     "build:prod": "npm run build && node scripts/validate-production.mjs",
     "deploy:check": "node scripts/validate-production.mjs",
+    "hostinger:prepare": "npm run build:prod && node scripts/prepare-hostinger-bundle.mjs",
     "start": "npm --prefix server run start",
     "lint": "eslint .",
     "preview": "vite preview"

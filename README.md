@@ -24,6 +24,12 @@ En production, le serveur Node expose `dist/` et les endpoints API (`/api/*`).
 
 Vérification : `npm run deploy:check`
 
+Préparation Hostinger (bundle prêt à uploader) :
+
+```bash
+npm run hostinger:prepare
+```
+
 ## Compte admin (dev)
 
 - Email : `admin@sowcoder.sn` (voir `.env` ou `server/.env`)
