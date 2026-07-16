@@ -1,36 +1,35 @@
-# SowCoder — Site vitrine
+# SowCoder — Site vitrine PHP
 
-Frontend **React + Vite**, API **Node.js (Express)**, contenu éditable via dashboard admin.
+Site vitrine **SowCoder** pour **WAMP** (PHP + MySQL).
 
-## Développement local
+## Démarrage
 
-```bash
-npm ci
-npm --prefix server ci
-npm run dev:all
-```
-
-- Site : http://localhost:5173  
-- API : http://localhost:3001  
-
-## Production (Node.js)
+1. Démarrez Apache + MySQL dans WAMP.
+2. Installez la base :
 
 ```bash
-npm run build:prod
-npm start
+mysql -u root < database/install.sql
+mysql -u root < database/site_tables.sql
+php scripts/seed-site.php
 ```
 
-En production, le serveur Node expose `dist/` et les endpoints API (`/api/*`).
+3. Ouvrez : [http://localhost/mon-site-vitrine/](http://localhost/mon-site-vitrine/)
 
-Vérification : `npm run deploy:check`
+## Admin
 
-Préparation Hostinger (bundle prêt à uploader) :
+- URL : `/?page=admin`
+- E-mail : `admin@sowcoder.com`
+- Mot de passe : `Admin123!`
 
-```bash
-npm run hostinger:prepare
+## Structure
+
+```
+mon-site-vitrine/
+├── index.php
+├── app/           # PHP (config, pages, auth, contenu)
+├── assets/        # CSS / JS
+├── database/      # SQL
+└── scripts/       # seed-site.php
 ```
 
-## Compte admin (dev)
-
-- Email : `admin@sowcoder.sn` (voir `.env` ou `server/.env`)
-- Changer le mot de passe avant la mise en ligne.
+Connexion MySQL : `app/config.php` — contenu du site : tables `site_*` + dashboard.
