@@ -11,40 +11,45 @@ $name = '';
 $email = '';
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-    $name = trim((string) ($_POST['name'] ?? ''));
-    $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')));
-    $password = (string) ($_POST['password'] ?? '');
-    $passwordConfirm = (string) ($_POST['password_confirm'] ?? '');
+    if (!csrf_verify($_POST['_csrf'] ?? null)) {
+        $errors[] = 'Session expirée. Rechargez la page.';
+    } else {
+        $name = trim((string) ($_POST['name'] ?? ''));
+        $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')));
+        $password = (string) ($_POST['password'] ?? '');
+        $passwordConfirm = (string) ($_POST['password_confirm'] ?? '');
 
-    if ($name === '' || mb_strlen($name) > 120) {
-        $errors[] = 'Indiquez votre nom (120 caractères max).';
-    }
-    if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-        $errors[] = 'Indiquez une adresse e-mail valide.';
-    }
-    if (mb_strlen($password) < 8) {
-        $errors[] = 'Le mot de passe doit contenir au moins 8 caractères.';
-    }
-    if ($password !== $passwordConfirm) {
-        $errors[] = 'Les mots de passe ne correspondent pas.';
-    }
+        if ($name === '' || mb_strlen($name) > 120) {
+            $errors[] = 'Indiquez votre nom (120 caractères max).';
+        }
+        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $errors[] = 'Indiquez une adresse e-mail valide.';
+        }
+        if (mb_strlen($password) < 8) {
+            $errors[] = 'Le mot de passe doit contenir au moins 8 caractères.';
+        }
+        if ($password !== $passwordConfirm) {
+            $errors[] = 'Les mots de passe ne correspondent pas.';
+        }
 
-    if ($errors === []) {
-        try {
-            if (auth_find_by_email($email) !== null) {
-                $errors[] = 'Un compte existe déjà avec cet e-mail.';
-            } else {
-                $user = auth_register($name, $email, $password);
-                auth_login($user);
-                redirect_to('home', ['welcome' => '1']);
+        if ($errors === []) {
+            try {
+                if (auth_find_by_email($email) !== null) {
+                    $errors[] = 'Un compte existe déjà avec cet e-mail.';
+                } else {
+                    $user = auth_register($name, $email, $password);
+                    auth_login($user);
+                    redirect_to('home', ['welcome' => '1']);
+                }
+            } catch (Throwable $e) {
+                $errors[] = 'Inscription impossible pour le moment. Réessayez.';
             }
-        } catch (Throwable $e) {
-            $errors[] = 'Inscription impossible pour le moment. Réessayez.';
         }
     }
 }
 
 $bodyClass = 'page-auth';
+$csrf = csrf_token();
 ?>
 
 <section class="auth-shell">
@@ -71,6 +76,7 @@ $bodyClass = 'page-auth';
             <?php endif; ?>
 
             <form class="auth-form" method="post" action="<?= e(page_url('register')) ?>" novalidate>
+                <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
                 <div class="field">
                     <label for="name">Nom complet</label>
                     <input type="text" id="name" name="name" required autocomplete="name" maxlength="120" value="<?= e($name) ?>">

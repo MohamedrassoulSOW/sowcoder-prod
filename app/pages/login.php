@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 $next = (string) ($_GET['next'] ?? $_POST['next'] ?? '');
-$allowedNext = ['admin', 'home'];
+$allowedNext = ['admin', 'home', 'profile'];
 if (!in_array($next, $allowedNext, true)) {
     $next = '';
 }
 
 if (auth_check()) {
+    if ($next === 'profile') {
+        redirect_to('profile');
+    }
     if (auth_is_admin() && $next === 'admin') {
         redirect_to('admin');
     }
@@ -19,35 +22,40 @@ $errors = [];
 $email = '';
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-    $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')));
-    $password = (string) ($_POST['password'] ?? '');
+    if (!csrf_verify($_POST['_csrf'] ?? null)) {
+        $errors[] = 'Session expirée. Rechargez la page.';
+    } else {
+        $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')));
+        $password = (string) ($_POST['password'] ?? '');
 
-    if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-        $errors[] = 'Indiquez une adresse e-mail valide.';
-    }
-    if ($password === '') {
-        $errors[] = 'Le mot de passe est requis.';
-    }
+        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $errors[] = 'Indiquez une adresse e-mail valide.';
+        }
+        if ($password === '') {
+            $errors[] = 'Le mot de passe est requis.';
+        }
 
-    if ($errors === []) {
-        try {
-            $user = auth_find_by_email($email);
-            if ($user === null || !password_verify($password, (string) $user['password'])) {
-                $errors[] = 'E-mail ou mot de passe incorrect.';
-            } else {
-                auth_login($user);
-                if (($user['role'] ?? '') === 'admin' && ($next === 'admin' || $next === '')) {
-                    redirect_to('admin');
+        if ($errors === []) {
+            try {
+                $user = auth_find_by_email($email);
+                if ($user === null || !password_verify($password, (string) $user['password'])) {
+                    $errors[] = 'E-mail ou mot de passe incorrect.';
+                } else {
+                    auth_login($user);
+                    if (($user['role'] ?? '') === 'admin' && ($next === 'admin' || $next === '')) {
+                        redirect_to('admin');
+                    }
+                    redirect_to('home', ['welcome' => '1']);
                 }
-                redirect_to('home', ['welcome' => '1']);
+            } catch (Throwable $e) {
+                $errors[] = 'Connexion impossible pour le moment. Réessayez.';
             }
-        } catch (Throwable $e) {
-            $errors[] = 'Connexion impossible pour le moment. Réessayez.';
         }
     }
 }
 
 $bodyClass = 'page-auth';
+$csrf = csrf_token();
 ?>
 
 <section class="auth-shell">
@@ -78,6 +86,7 @@ $bodyClass = 'page-auth';
             <?php endif; ?>
 
             <form class="auth-form" method="post" action="<?= e(page_url('login')) ?>" novalidate>
+                <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
                 <?php if ($next !== ''): ?>
                     <input type="hidden" name="next" value="<?= e($next) ?>">
                 <?php endif; ?>
@@ -89,6 +98,9 @@ $bodyClass = 'page-auth';
                     <label for="password">Mot de passe</label>
                     <input type="password" id="password" name="password" required autocomplete="current-password" minlength="8">
                 </div>
+                <p class="auth-forgot">
+                    <a href="<?= e(page_url('forgot-password')) ?>">Mot de passe oublié ?</a>
+                </p>
                 <button class="btn btn-primary btn-block" type="submit">Se connecter</button>
             </form>
 

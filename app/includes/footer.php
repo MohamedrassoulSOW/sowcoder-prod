@@ -21,6 +21,7 @@ declare(strict_types=1);
                     <li><a href="<?= e(page_url('services')) ?>">Services</a></li>
                     <li><a href="<?= e(page_url('about')) ?>">À propos</a></li>
                     <li><a href="<?= e(page_url('contact')) ?>">Contact</a></li>
+                    <li><a href="<?= e(page_url('newsletter')) ?>">Newsletter</a></li>
                     <li><a href="<?= e(page_url('login')) ?>">Connexion</a></li>
                     <li><a href="<?= e(page_url('register')) ?>">Inscription</a></li>
                 </ul>

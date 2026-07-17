@@ -8,6 +8,7 @@ $address = (string) ($config['address'] ?? 'Sangalkam, Dakar, Sénégal');
 $mapQuery = rawurlencode($address);
 $mapEmbed = 'https://www.google.com/maps?q=' . $mapQuery . '&z=15&hl=fr&output=embed';
 $mapLink = 'https://www.google.com/maps/search/?api=1&query=' . $mapQuery;
+$csrf = csrf_token();
 ?>
 
 <section class="page-hero">
@@ -57,6 +58,7 @@ $mapLink = 'https://www.google.com/maps/search/?api=1&query=' . $mapQuery;
             <?php endif; ?>
 
             <form class="contact-form" action="<?= e(page_url('contact-submit')) ?>" method="post" novalidate>
+                <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
                 <div class="field">
                     <label for="name">Nom complet</label>
                     <input type="text" id="name" name="name" required autocomplete="name" maxlength="120">

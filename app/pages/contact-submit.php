@@ -7,6 +7,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     exit;
 }
 
+if (!csrf_verify($_POST['_csrf'] ?? null)) {
+    header('Location: ' . page_url('contact') . '&status=error');
+    exit;
+}
+
 $name = trim((string) ($_POST['name'] ?? ''));
 $email = trim((string) ($_POST['email'] ?? ''));
 $phone = trim((string) ($_POST['phone'] ?? ''));

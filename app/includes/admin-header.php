@@ -7,7 +7,7 @@ declare(strict_types=1);
 $tabs = [
     'overview' => 'Vue d’ensemble',
     'settings' => 'Coordonnées',
-    'hero' => 'Accueil (Hero)',
+    'hero' => 'Accueil',
     'services' => 'Services',
     'projects' => 'Projets',
     'about' => 'À propos',
@@ -15,6 +15,7 @@ $tabs = [
     'testimonials' => 'Témoignages',
     'messages' => 'Messages',
 ];
+$currentTabLabel = $tabs[$adminTab] ?? 'Dashboard';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -30,12 +31,25 @@ $tabs = [
 </head>
 <body class="page-admin">
     <div class="admin-shell">
+        <header class="admin-mobile-bar">
+            <a class="brand admin-brand" href="<?= e(page_url('admin')) ?>">
+                <span class="brand-mark" aria-hidden="true">SC</span>
+                <span class="brand-name">Sow<span>Coder</span></span>
+            </a>
+            <div class="admin-mobile-actions">
+                <a href="<?= e(page_url('profile')) ?>">Profil</a>
+                <a href="<?= e(page_url('home')) ?>">Site</a>
+                <a href="<?= e(page_url('logout')) ?>">Sortir</a>
+            </div>
+        </header>
+
         <aside class="admin-sidebar">
             <a class="brand admin-brand" href="<?= e(page_url('admin')) ?>">
                 <span class="brand-mark" aria-hidden="true">SC</span>
                 <span class="brand-name">Sow<span>Coder</span></span>
             </a>
             <p class="admin-sidebar-label">Dashboard</p>
+
             <nav class="admin-nav">
                 <?php foreach ($tabs as $key => $label): ?>
                     <a href="<?= e(page_url('admin') . '&tab=' . rawurlencode($key)) ?>" class="<?= $adminTab === $key ? 'is-active' : '' ?>">
@@ -43,7 +57,9 @@ $tabs = [
                     </a>
                 <?php endforeach; ?>
             </nav>
+
             <div class="admin-sidebar-foot">
+                <a href="<?= e(page_url('profile')) ?>">Mon profil</a>
                 <a href="<?= e(page_url('home')) ?>">← Voir le site</a>
                 <a href="<?= e(page_url('logout')) ?>">Déconnexion</a>
             </div>
@@ -53,11 +69,40 @@ $tabs = [
             <header class="admin-topbar">
                 <div>
                     <p class="eyebrow">Administration</p>
-                    <h1><?= e($tabs[$adminTab] ?? 'Dashboard') ?></h1>
+                    <h1><?= e($currentTabLabel) ?></h1>
                 </div>
                 <div class="admin-topbar-user">
                     <span><?= e($currentUser['name'] ?? 'Admin') ?></span>
                     <small><?= e($currentUser['email'] ?? '') ?></small>
                 </div>
             </header>
+
+            <div class="admin-mobile-section">
+                <p class="admin-mobile-section-label">Section</p>
+                <div class="admin-dropdown" data-admin-dropdown>
+                    <button
+                        type="button"
+                        class="admin-dropdown-toggle"
+                        data-admin-dropdown-toggle
+                        aria-expanded="false"
+                        aria-haspopup="listbox"
+                    >
+                        <span data-admin-dropdown-label><?= e($currentTabLabel) ?></span>
+                        <span class="admin-dropdown-caret" aria-hidden="true"></span>
+                    </button>
+                    <ul class="admin-dropdown-menu" role="listbox" hidden data-admin-dropdown-menu>
+                        <?php foreach ($tabs as $key => $label): ?>
+                            <li role="option">
+                                <a
+                                    href="<?= e(page_url('admin') . '&tab=' . rawurlencode($key)) ?>"
+                                    class="<?= $adminTab === $key ? 'is-active' : '' ?>"
+                                >
+                                    <?= e($label) ?>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            </div>
+
             <main class="admin-content">

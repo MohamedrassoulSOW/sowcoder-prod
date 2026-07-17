@@ -61,7 +61,7 @@ $bodyClass = 'page-admin';
         </article>
     </div>
     <div class="admin-hint">
-        <p>Astuce : choisissez une section dans le menu de gauche pour modifier le contenu. Sur chaque page d’édition, cliquez sur <strong>Enregistrer</strong> pour publier vos changements.</p>
+        <p>Astuce : choisissez une section dans le menu, puis cliquez sur <strong>Enregistrer</strong> après vos modifications.</p>
     </div>
 <?php endif; ?>
 

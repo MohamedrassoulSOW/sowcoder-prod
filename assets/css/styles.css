@@ -1,17 +1,18 @@
 :root {
-  --ink: #0d1b2a;
-  --ink-soft: #1b3350;
-  --muted: #5a7184;
-  --line: rgba(13, 27, 42, 0.1);
-  --paper: #f3f7fa;
-  --surface: rgba(255, 255, 255, 0.72);
-  --teal: #0d9488;
-  --teal-deep: #0f766e;
-  --amber: #d97706;
-  --amber-deep: #b45309;
+  --ink: #e8eef4;
+  --ink-soft: #c5d1dc;
+  --muted: #8b9aab;
+  --line: rgba(232, 238, 244, 0.12);
+  --paper: #0b1219;
+  --card: #14202c;
+  --surface: rgba(20, 32, 44, 0.88);
+  --teal: #2dd4bf;
+  --teal-deep: #5eead4;
+  --amber: #14b8a6;
+  --amber-deep: #0d9488;
   --white: #ffffff;
-  --shadow: 0 20px 50px rgba(13, 27, 42, 0.1);
-  --shadow-sm: 0 8px 24px rgba(13, 27, 42, 0.06);
+  --shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.25);
   --radius: 14px;
   --radius-sm: 10px;
   --font-display: "Syne", sans-serif;
@@ -35,17 +36,22 @@ body {
   font-family: var(--font-body);
   color: var(--ink);
   background:
-    radial-gradient(900px 420px at 0% -5%, rgba(13, 148, 136, 0.14), transparent 55%),
-    radial-gradient(700px 380px at 100% 0%, rgba(217, 119, 6, 0.1), transparent 50%),
-    linear-gradient(180deg, #f8fbfc 0%, var(--paper) 45%, #e9f0f5 100%);
+    radial-gradient(900px 420px at 0% -5%, rgba(45, 212, 191, 0.12), transparent 55%),
+    radial-gradient(700px 380px at 100% 0%, rgba(20, 184, 166, 0.08), transparent 50%),
+    linear-gradient(180deg, #0e1720 0%, var(--paper) 45%, #070d13 100%);
   background-attachment: fixed;
   line-height: 1.65;
   min-height: 100vh;
 }
 
-img {
+img,
+iframe {
   max-width: 100%;
   display: block;
+}
+
+img {
+  height: auto;
 }
 
 a {
@@ -87,8 +93,9 @@ p {
   left: 1rem;
   top: -4rem;
   z-index: 100;
-  background: var(--ink);
-  color: var(--white);
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
   padding: 0.75rem 1rem;
   border-radius: var(--radius-sm);
 }
@@ -108,14 +115,14 @@ p {
   top: 0;
   z-index: 50;
   backdrop-filter: blur(16px) saturate(1.2);
-  background: rgba(248, 251, 252, 0.78);
+  background: rgba(11, 18, 25, 0.78);
   border-bottom: 1px solid transparent;
   transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
 }
 
 .site-header.is-scrolled {
   border-bottom-color: var(--line);
-  background: rgba(248, 251, 252, 0.92);
+  background: rgba(11, 18, 25, 0.94);
   box-shadow: var(--shadow-sm);
 }
 
@@ -144,8 +151,8 @@ p {
   height: 2.5rem;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, var(--teal), var(--ink));
-  color: var(--white);
+  background: linear-gradient(145deg, var(--teal), #0f766e);
+  color: #0b1219;
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 0.85rem;
@@ -219,7 +226,7 @@ p {
 
 .nav-btn-ghost {
   border: 1px solid var(--line);
-  background: var(--white);
+  background: var(--card);
   color: var(--ink) !important;
 }
 
@@ -244,7 +251,7 @@ p {
   width: 2.6rem;
   height: 2.6rem;
   border: 1px solid var(--line);
-  background: var(--white);
+  background: var(--card);
   border-radius: var(--radius-sm);
   padding: 0.55rem;
   cursor: pointer;
@@ -267,7 +274,7 @@ p {
 }
 
 .flash-banner {
-  background: linear-gradient(90deg, rgba(13, 148, 136, 0.16), rgba(217, 119, 6, 0.12));
+  background: linear-gradient(90deg, rgba(13, 148, 136, 0.16), rgba(45, 212, 191, 0.12));
   border-bottom: 1px solid var(--line);
   padding: 0.85rem 0;
   font-weight: 600;
@@ -332,7 +339,7 @@ p {
   letter-spacing: -0.05em;
   line-height: 0.92;
   margin: 0 0 0.85rem;
-  background: linear-gradient(120deg, #fff 20%, #99f6e4 70%, #fcd34d);
+  background: linear-gradient(120deg, #fff 15%, #99f6e4 65%, #2dd4bf);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -390,9 +397,9 @@ p {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--amber), var(--amber-deep));
+  background: linear-gradient(135deg, var(--teal), #0f766e);
   color: var(--white);
-  box-shadow: 0 14px 28px rgba(180, 83, 9, 0.28);
+  box-shadow: 0 14px 28px rgba(13, 148, 136, 0.28);
 }
 
 .btn-primary:hover {
@@ -428,7 +435,7 @@ p {
 .contact-wa .btn-ghost {
   border-color: var(--line);
   color: var(--ink);
-  background: var(--white);
+  background: var(--card);
 }
 
 .contact-aside .btn-ghost:hover,
@@ -443,7 +450,7 @@ p {
 }
 
 .section-tint {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.03);
   border-block: 1px solid var(--line);
 }
 
@@ -490,7 +497,7 @@ p {
 }
 
 .text-link:hover {
-  color: var(--amber-deep);
+  color: var(--teal);
 }
 
 /* Bento services */
@@ -527,7 +534,7 @@ p {
 .service-index {
   font-family: var(--font-display);
   font-weight: 800;
-  color: var(--amber-deep);
+  color: var(--teal);
   font-size: 1rem;
   display: inline-block;
   margin-bottom: 0.6rem;
@@ -540,7 +547,7 @@ p {
 }
 
 .service-panel {
-  background: var(--surface);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 1.5rem;
@@ -568,7 +575,7 @@ p {
 }
 
 .project-card {
-  background: var(--white);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 1.4rem;
@@ -650,7 +657,7 @@ p {
 }
 
 .feature-tile {
-  background: var(--white);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 1.25rem;
@@ -675,7 +682,7 @@ p {
 
 .quote-card {
   margin: 0;
-  background: var(--white);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 1.4rem;
@@ -743,7 +750,7 @@ p {
 }
 
 .value-item {
-  background: var(--white);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 1.2rem;
@@ -804,7 +811,7 @@ p {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--white);
+  background: var(--card);
   box-shadow: var(--shadow-sm);
 }
 
@@ -824,7 +831,7 @@ p {
   gap: 1rem;
   padding: 1.1rem 1.25rem;
   border-top: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(11, 18, 25, 0.92);
 }
 
 .map-card-footer p {
@@ -862,7 +869,7 @@ p {
 .field textarea {
   width: 100%;
   border: 1px solid var(--line);
-  background: var(--white);
+  background: #0f1822;
   border-radius: var(--radius-sm);
   padding: 0.85rem 1rem;
   font: inherit;
@@ -894,8 +901,8 @@ p {
 }
 
 .alert-error {
-  background: rgba(217, 119, 6, 0.14);
-  color: var(--amber-deep);
+  background: rgba(248, 113, 113, 0.14);
+  color: #fca5a5;
 }
 
 /* Auth */
@@ -968,7 +975,7 @@ p {
 
 .auth-card {
   width: min(100%, 440px);
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(20, 32, 44, 0.92);
   border: 1px solid var(--line);
   border-radius: calc(var(--radius) + 4px);
   padding: 1.75rem;
@@ -991,14 +998,45 @@ p {
 }
 
 .auth-switch a:hover {
-  color: var(--amber-deep);
+  color: var(--teal);
+}
+
+.auth-forgot {
+  margin: -0.35rem 0 0.25rem;
+  text-align: right;
+  font-size: 0.9rem;
+}
+
+.auth-forgot a {
+  color: var(--teal-deep);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-forgot a:hover {
+  color: var(--teal);
+}
+
+.auth-section-title {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.auth-card-wide {
+  width: min(100%, 520px);
+}
+
+@media (min-width: 900px) {
+  .auth-shell-wide {
+    grid-template-columns: 0.9fr 1.1fr;
+  }
 }
 
 /* Footer */
 .site-footer {
   margin-top: 2rem;
   padding: 3.5rem 0 1.5rem;
-  background: var(--ink);
+  background: #070d13;
   color: rgba(255, 255, 255, 0.82);
 }
 
@@ -1150,7 +1188,7 @@ p {
     align-items: stretch;
     gap: 0.35rem;
     padding: 0.85rem 1rem 1.25rem;
-    background: rgba(248, 251, 252, 0.98);
+    background: rgba(11, 18, 25, 0.98);
     border-bottom: 1px solid var(--line);
     box-shadow: var(--shadow-sm);
   }
@@ -1178,11 +1216,67 @@ p {
     margin-top: 0.25rem;
   }
 
-  .why-features {
-    grid-template-columns: 1fr;
+  .hero {
+    min-height: 70vh;
   }
 
   .hero-content {
-    padding-bottom: 3rem;
+    width: min(100% - 2rem, 40rem);
+    margin-left: 1rem;
+    margin-right: 1rem;
+    padding: 3rem 0 2.5rem;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-actions .btn {
+    width: 100%;
+  }
+
+  .section {
+    padding: 3rem 0;
+  }
+
+  .why-features,
+  .bento-services,
+  .project-list,
+  .quote-list,
+  .service-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cta-band-inner,
+  .cta-actions,
+  .map-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cta-band .btn,
+  .map-card-footer .btn {
+    width: 100%;
+  }
+
+  .map-frame {
+    height: 260px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-wa {
+    flex-direction: column;
+  }
+
+  .contact-wa .btn {
+    width: 100%;
   }
 }

@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `uniq_users_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Compte admin : admin@sowcoder.com / Admin123!
+-- Compte admin initial (admin@sowcoder.com) — changez le mot de passe dès la 1re connexion.
 INSERT INTO `users` (`name`, `email`, `password`, `role`)
 SELECT 'Administrateur', 'admin@sowcoder.com', '$2y$12$dYIquwmKaN3AXrA3JoM1k.mehmbzy/jvAm67bT5.E6pVfbetHkI6a', 'admin'
 WHERE NOT EXISTS (

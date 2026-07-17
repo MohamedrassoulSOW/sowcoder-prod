@@ -43,6 +43,7 @@ declare(strict_types=1);
 
                 <?php if ($currentUser): ?>
                     <span class="nav-user">Bonjour, <?= e($currentUser['name']) ?></span>
+                    <a class="nav-btn nav-btn-ghost <?= is_active('profile') ? 'is-active' : '' ?>" href="<?= e(page_url('profile')) ?>">Profil</a>
                     <?php if (($currentUser['role'] ?? '') === 'admin'): ?>
                         <a class="nav-btn nav-btn-solid" href="<?= e(page_url('admin')) ?>">Dashboard</a>
                     <?php endif; ?>
