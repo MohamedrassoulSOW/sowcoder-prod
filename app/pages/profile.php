@@ -15,10 +15,24 @@ $success = '';
 $name = (string) $user['name'];
 $email = (string) $user['email'];
 $activeForm = (string) ($_POST['form'] ?? 'profile');
+$avatarUrl = auth_avatar_url($user);
+$avatarInitials = auth_avatar_initials($user);
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!csrf_verify($_POST['_csrf'] ?? null)) {
         $errors[] = 'Session expirée. Rechargez la page.';
+    } elseif ($activeForm === 'avatar') {
+        try {
+            if (empty($_FILES['avatar']) || !is_array($_FILES['avatar'])) {
+                throw new RuntimeException('Choisissez une image.');
+            }
+            auth_update_avatar((int) $user['id'], $_FILES['avatar']);
+            $user = auth_find_by_id((int) $user['id']) ?? $user;
+            $avatarUrl = auth_avatar_url($user);
+            $success = 'Photo de profil mise à jour.';
+        } catch (Throwable $e) {
+            $errors[] = $e->getMessage();
+        }
     } elseif ($activeForm === 'profile') {
         $name = trim((string) ($_POST['name'] ?? ''));
         $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')));
@@ -37,6 +51,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 auth_update_profile((int) $user['id'], $name, $email);
                 $success = 'Profil mis à jour.';
                 $user = auth_find_by_id((int) $user['id']) ?? $user;
+                $avatarInitials = auth_avatar_initials($user);
             } catch (Throwable $e) {
                 $errors[] = 'Impossible d’enregistrer le profil.';
             }
@@ -82,7 +97,25 @@ $csrf = csrf_token();
     </div>
 
     <div class="auth-panel">
-        <div class="auth-card auth-card-wide">
+        <div class="auth-card auth-card-wide auth-card-profile">
+            <form class="profile-avatar-form" method="post" action="<?= e(page_url('profile')) ?>" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
+                <input type="hidden" name="form" value="avatar">
+                <label class="profile-avatar" title="Changer la photo">
+                    <span class="profile-avatar-media" data-avatar-preview>
+                        <?php if ($avatarUrl !== ''): ?>
+                            <img src="<?= e($avatarUrl) ?>" alt="Photo de profil de <?= e((string) $user['name']) ?>">
+                        <?php else: ?>
+                            <span class="profile-avatar-initials"><?= e($avatarInitials) ?></span>
+                        <?php endif; ?>
+                    </span>
+                    <span class="profile-avatar-badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V8"/><path d="M8.5 11.5 12 8l3.5 3.5"/><path d="M4 19h16"/></svg>
+                    </span>
+                    <input class="sr-only" type="file" name="avatar" accept="image/jpeg,image/png,image/webp,image/gif" data-avatar-input>
+                </label>
+            </form>
+
             <p class="eyebrow">Compte</p>
             <h1>Mon profil</h1>
             <p class="auth-lead"><?= e((string) $user['email']) ?></p>

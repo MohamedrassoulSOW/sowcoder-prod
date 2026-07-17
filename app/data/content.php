@@ -50,18 +50,21 @@ return [
             'description' => 'Site institutionnel responsive, prise de rendez-vous et référencement local.',
             'category' => 'Web',
             'year' => '2026',
+            'image' => 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1200&q=80',
         ],
         [
             'title' => 'Boutique en ligne — Mode & accessoires',
             'description' => 'E-commerce catalogue, panier et paiement mobile pour le marché sénégalais.',
             'category' => 'E-commerce',
             'year' => '2025',
+            'image' => 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80',
         ],
         [
             'title' => 'Plateforme de gestion — Formation pro',
             'description' => 'Inscriptions en ligne, espace apprenant et tableau de bord administrateur.',
             'category' => 'Application',
             'year' => '2025',
+            'image' => 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80',
         ],
     ],
     'why' => [

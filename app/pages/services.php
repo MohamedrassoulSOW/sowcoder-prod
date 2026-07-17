@@ -16,7 +16,10 @@ $services = $content['services'];
     <div class="container service-grid">
         <?php foreach ($services as $index => $service): ?>
             <article class="service-panel reveal" data-reveal>
-                <span class="service-index">0<?= $index + 1 ?></span>
+                <div class="service-meta">
+                    <span class="service-icon" aria-hidden="true"><?= service_icon_svg((string) ($service['icon'] ?? 'code')) ?></span>
+                    <span class="service-index">0<?= $index + 1 ?></span>
+                </div>
                 <h2><?= e($service['title']) ?></h2>
                 <p><?= e($service['description']) ?></p>
                 <a class="text-link" href="<?= e(page_url('contact')) ?>&sujet=<?= e(rawurlencode($service['title'])) ?>">Demander un devis</a>

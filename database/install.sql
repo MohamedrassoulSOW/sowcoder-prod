@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` VARCHAR(180) NOT NULL,
   `password` VARCHAR(255) NOT NULL,
   `role` VARCHAR(20) NOT NULL DEFAULT 'user',
+  `avatar` VARCHAR(255) NOT NULL DEFAULT '',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_users_email` (`email`)
@@ -37,4 +38,4 @@ WHERE NOT EXISTS (
   SELECT 1 FROM `users` WHERE `email` = 'admin@sowcoder.com'
 );
 
--- Tables site_* : voir site_tables.sql puis php scripts/seed-site.php
+-- Tables site_* : créées automatiquement au premier chargement (ou importer site_tables.sql)

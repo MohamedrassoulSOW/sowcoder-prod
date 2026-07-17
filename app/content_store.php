@@ -8,10 +8,10 @@ function content_defaults(): array
 
     $defaults['settings'] = [
         'site_name' => 'SowCoder',
-        'tagline' => 'Solutions digitales pour votre croissance',
+        'tagline' => 'L’innovation digitale au service de votre croissance',
         'email' => 'contact@sowcoder.com',
         'address' => 'Sangalkam, Dakar, Sénégal',
-        'meta_description' => 'SowCoder — agence digitale à Dakar. Développement web, marketing, design, formations et solutions pour entreprises.',
+        'meta_description' => 'SowCoder — agence digitale à Sangalkam (Dakar). Sites web, e-commerce, marketing, design, formations et solutions sur mesure pour faire grandir votre activité.',
         'phones' => [
             ['label' => 'Sénégal', 'number' => '+221 77 790 14 60', 'tel' => '+221777901460'],
             ['label' => 'Maroc', 'number' => '+212 684 088765', 'tel' => '+212684088765'],
@@ -21,6 +21,9 @@ function content_defaults(): array
             ['label' => 'WhatsApp Maroc', 'url' => 'https://wa.me/212684088765'],
         ],
     ];
+
+    $blogFile = __DIR__ . '/data/blog.php';
+    $defaults['blog'] = is_file($blogFile) ? require $blogFile : [];
 
     return $defaults;
 }
@@ -44,7 +47,67 @@ function content_ensure_tables(): void
         }
     }
 
+    // Migrations légères (bases déjà installées)
+    try {
+        $cols = db()->query("SHOW COLUMNS FROM site_projects LIKE 'image'")->fetch();
+        if ($cols === false) {
+            db()->exec("ALTER TABLE site_projects ADD COLUMN image VARCHAR(500) NOT NULL DEFAULT '' AFTER year");
+        }
+    } catch (Throwable $e) {
+        // table peut ne pas encore exister
+    }
+
+    blog_seed_if_empty();
+
     $ready = true;
+}
+
+function blog_seed_if_empty(): void
+{
+    try {
+        $count = (int) db()->query('SELECT COUNT(*) FROM site_blog_posts')->fetchColumn();
+        if ($count > 0) {
+            return;
+        }
+
+        $defaults = content_defaults();
+        $posts = $defaults['blog'] ?? [];
+        if ($posts === []) {
+            return;
+        }
+
+        $stmt = db()->prepare(
+            'INSERT INTO site_blog_posts (slug, title, excerpt, category, published_at, image, body, sort_order)
+             VALUES (:slug, :title, :excerpt, :category, :published_at, :image, :body, :sort_order)'
+        );
+
+        foreach (array_values($posts) as $i => $row) {
+            if (!is_array($row) || trim((string) ($row['title'] ?? '')) === '') {
+                continue;
+            }
+            $title = trim((string) $row['title']);
+            $slug = blog_slugify((string) ($row['slug'] ?? $title));
+            if ($slug === '') {
+                $slug = 'article-' . ($i + 1);
+            }
+            $date = trim((string) ($row['date'] ?? date('Y-m-d')));
+            if (strtotime($date) === false) {
+                $date = date('Y-m-d');
+            }
+            $stmt->execute([
+                'slug' => $slug,
+                'title' => $title,
+                'excerpt' => trim((string) ($row['excerpt'] ?? '')),
+                'category' => trim((string) ($row['category'] ?? '')),
+                'published_at' => $date,
+                'image' => trim((string) ($row['image'] ?? '')),
+                'body' => blog_body_to_storage($row['body'] ?? ''),
+                'sort_order' => $i,
+            ]);
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
 }
 
 function content_load(): array
@@ -100,7 +163,14 @@ function content_fetch_from_tables(array $defaults): array
     $hero = db()->query('SELECT eyebrow, title, `lead`, cta_primary, cta_secondary, image, image_alt FROM site_hero WHERE id = 1 LIMIT 1')->fetch() ?: [];
 
     $services = db()->query('SELECT title, description, icon FROM site_services ORDER BY sort_order ASC, id ASC')->fetchAll() ?: [];
-    $projects = db()->query('SELECT title, description, category, year FROM site_projects ORDER BY sort_order ASC, id ASC')->fetchAll() ?: [];
+    $projects = db()->query('SELECT title, description, category, year, image FROM site_projects ORDER BY sort_order ASC, id ASC')->fetchAll() ?: [];
+
+    // Complète les images manquantes depuis les défauts (anciennes lignes)
+    foreach ($projects as $i => $project) {
+        if (trim((string) ($project['image'] ?? '')) === '' && isset($defaults['projects'][$i]['image'])) {
+            $projects[$i]['image'] = $defaults['projects'][$i]['image'];
+        }
+    }
 
     $aboutRow = db()->query('SELECT `lead`, mission FROM site_about WHERE id = 1 LIMIT 1')->fetch() ?: [];
     $aboutValues = db()->query('SELECT title, text FROM site_about_values ORDER BY sort_order ASC, id ASC')->fetchAll() ?: [];
@@ -110,6 +180,22 @@ function content_fetch_from_tables(array $defaults): array
     $features = db()->query('SELECT title, description FROM site_why_features ORDER BY sort_order ASC, id ASC')->fetchAll() ?: [];
 
     $testimonials = db()->query('SELECT text, name, role FROM site_testimonials ORDER BY sort_order ASC, id ASC')->fetchAll() ?: [];
+
+    $blogRows = [];
+    try {
+        $blogRows = db()->query(
+            'SELECT slug, title, excerpt, category, published_at AS `date`, image, body
+             FROM site_blog_posts
+             ORDER BY published_at DESC, sort_order ASC, id ASC'
+        )->fetchAll() ?: [];
+    } catch (Throwable $e) {
+        $blogRows = [];
+    }
+
+    $blog = [];
+    foreach ($blogRows as $row) {
+        $blog[] = blog_normalize_row($row);
+    }
 
     $content = [
         'settings' => [
@@ -136,6 +222,7 @@ function content_fetch_from_tables(array $defaults): array
             'features' => $features !== [] ? $features : $defaults['why']['features'],
         ],
         'testimonials' => $testimonials !== [] ? $testimonials : $defaults['testimonials'],
+        'blog' => $blog !== [] ? $blog : ($defaults['blog'] ?? []),
     ];
 
     return content_merge($defaults, $content);
@@ -251,8 +338,8 @@ function content_save(array $content): void
 
         $pdo->exec('DELETE FROM site_projects');
         $projectStmt = $pdo->prepare(
-            'INSERT INTO site_projects (title, description, category, year, sort_order)
-             VALUES (:title, :description, :category, :year, :sort_order)'
+            'INSERT INTO site_projects (title, description, category, year, image, sort_order)
+             VALUES (:title, :description, :category, :year, :image, :sort_order)'
         );
         foreach (array_values($content['projects'] ?? []) as $i => $row) {
             if (!is_array($row) || trim((string) ($row['title'] ?? '')) === '') {
@@ -263,6 +350,7 @@ function content_save(array $content): void
                 'description' => trim((string) ($row['description'] ?? '')),
                 'category' => trim((string) ($row['category'] ?? '')),
                 'year' => trim((string) ($row['year'] ?? '')),
+                'image' => trim((string) ($row['image'] ?? '')),
                 'sort_order' => $i,
             ]);
         }
@@ -345,6 +433,51 @@ function content_save(array $content): void
             ]);
         }
 
+        $pdo->exec('DELETE FROM site_blog_posts');
+        $blogStmt = $pdo->prepare(
+            'INSERT INTO site_blog_posts (slug, title, excerpt, category, published_at, image, body, sort_order)
+             VALUES (:slug, :title, :excerpt, :category, :published_at, :image, :body, :sort_order)'
+        );
+        $usedSlugs = [];
+        foreach (array_values($content['blog'] ?? []) as $i => $row) {
+            if (!is_array($row) || trim((string) ($row['title'] ?? '')) === '') {
+                continue;
+            }
+            $title = trim((string) $row['title']);
+            $slug = trim((string) ($row['slug'] ?? ''));
+            if ($slug === '') {
+                $slug = blog_slugify($title);
+            } else {
+                $slug = blog_slugify($slug);
+            }
+            if ($slug === '') {
+                $slug = 'article-' . ($i + 1);
+            }
+            $baseSlug = $slug;
+            $n = 2;
+            while (isset($usedSlugs[$slug])) {
+                $slug = $baseSlug . '-' . $n;
+                $n++;
+            }
+            $usedSlugs[$slug] = true;
+
+            $date = trim((string) ($row['date'] ?? ''));
+            if ($date === '' || strtotime($date) === false) {
+                $date = date('Y-m-d');
+            }
+
+            $blogStmt->execute([
+                'slug' => $slug,
+                'title' => $title,
+                'excerpt' => trim((string) ($row['excerpt'] ?? '')),
+                'category' => trim((string) ($row['category'] ?? '')),
+                'published_at' => $date,
+                'image' => trim((string) ($row['image'] ?? '')),
+                'body' => blog_body_to_storage($row['body'] ?? ''),
+                'sort_order' => $i,
+            ]);
+        }
+
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
@@ -352,6 +485,79 @@ function content_save(array $content): void
         }
         throw $e;
     }
+}
+
+function blog_slugify(string $text): string
+{
+    $text = trim(mb_strtolower($text));
+    $map = [
+        'à' => 'a', 'á' => 'a', 'â' => 'a', 'ä' => 'a', 'ã' => 'a',
+        'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
+        'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
+        'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'ö' => 'o', 'õ' => 'o',
+        'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
+        'ç' => 'c', 'ñ' => 'n',
+    ];
+    $text = strtr($text, $map);
+    $text = preg_replace('/[^a-z0-9]+/', '-', $text) ?? '';
+    return trim($text, '-');
+}
+
+/**
+ * @param mixed $body
+ */
+function blog_body_to_storage($body): string
+{
+    if (is_array($body)) {
+        $parts = array_values(array_filter(array_map(static fn ($p) => trim((string) $p), $body), static fn ($p) => $p !== ''));
+        return implode("\n\n", $parts);
+    }
+
+    return trim((string) $body);
+}
+
+/**
+ * @return list<string>
+ */
+function blog_body_to_paragraphs(string $body): array
+{
+    $parts = preg_split('/\R{2,}/', trim($body)) ?: [];
+    return array_values(array_filter(array_map('trim', $parts), static fn ($p) => $p !== ''));
+}
+
+function blog_normalize_row(array $row): array
+{
+    $bodyRaw = $row['body'] ?? '';
+    if (is_array($bodyRaw)) {
+        $paragraphs = array_values(array_filter(array_map(static fn ($p) => trim((string) $p), $bodyRaw), static fn ($p) => $p !== ''));
+    } else {
+        $paragraphs = blog_body_to_paragraphs((string) $bodyRaw);
+    }
+
+    return [
+        'slug' => (string) ($row['slug'] ?? ''),
+        'title' => (string) ($row['title'] ?? ''),
+        'excerpt' => (string) ($row['excerpt'] ?? ''),
+        'category' => (string) ($row['category'] ?? ''),
+        'date' => (string) ($row['date'] ?? $row['published_at'] ?? date('Y-m-d')),
+        'image' => (string) ($row['image'] ?? ''),
+        'body' => $paragraphs,
+        'body_text' => implode("\n\n", $paragraphs),
+    ];
+}
+
+function blog_load_articles(): array
+{
+    $content = content_load();
+    $articles = [];
+    foreach (($content['blog'] ?? []) as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $articles[] = blog_normalize_row($row);
+    }
+
+    return $articles;
 }
 
 function content_merge(array $defaults, array $stored): array

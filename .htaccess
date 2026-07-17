@@ -10,8 +10,8 @@
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
     # Bloquer l'accès direct aux fichiers / dossiers sensibles
-    RewriteRule ^(app|src|vendor|database|scripts|canvases)/ - [F,L]
-    RewriteRule ^(\.env|\.env\..*|composer\.(json|lock)|composer\.phar|test-mailjet\.php)$ - [F,L]
+    RewriteRule ^(app|src|vendor|database)/ - [F,L]
+    RewriteRule ^(\.env|\.env\..*|composer\.(json|lock)|composer\.phar)$ - [F,L]
 
     # Laisser passer les fichiers et dossiers réels (assets, etc.)
     RewriteCond %{REQUEST_FILENAME} !-f
@@ -20,7 +20,7 @@
 </IfModule>
 
 # Refus si mod_rewrite indisponible (Apache)
-<FilesMatch "(^\.env|composer\.(json|lock)|test-mailjet\.php)$">
+<FilesMatch "(^\.env|composer\.(json|lock))$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

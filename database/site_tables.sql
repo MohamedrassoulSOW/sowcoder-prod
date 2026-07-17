@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS `site_projects` (
   `description` TEXT NULL,
   `category` VARCHAR(80) NOT NULL DEFAULT '',
   `year` VARCHAR(20) NOT NULL DEFAULT '',
+  `image` VARCHAR(500) NOT NULL DEFAULT '',
   `sort_order` INT NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -99,4 +100,18 @@ CREATE TABLE IF NOT EXISTS `site_testimonials` (
   `role` VARCHAR(120) NOT NULL DEFAULT '',
   `sort_order` INT NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `site_blog_posts` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `slug` VARCHAR(180) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `excerpt` TEXT NULL,
+  `category` VARCHAR(80) NOT NULL DEFAULT '',
+  `published_at` DATE NOT NULL,
+  `image` VARCHAR(500) NOT NULL DEFAULT '',
+  `body` MEDIUMTEXT NULL,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_blog_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -63,8 +63,8 @@ function auth_require_admin(): void
 
 function auth_find_by_id(int $id): ?array
 {
-    auth_ensure_role_column();
-    $stmt = db()->prepare('SELECT id, name, email, password, role FROM users WHERE id = :id LIMIT 1');
+    auth_ensure_user_columns();
+    $stmt = db()->prepare('SELECT id, name, email, password, role, avatar FROM users WHERE id = :id LIMIT 1');
     $stmt->execute(['id' => $id]);
     $row = $stmt->fetch();
 
@@ -86,6 +86,100 @@ function auth_update_profile(int $userId, string $name, string $email): void
         $_SESSION['user']['name'] = $name;
         $_SESSION['user']['email'] = $email;
     }
+}
+
+/**
+ * Met à jour la photo de profil. Retourne le chemin relatif assets (ex. uploads/avatars/1.jpg).
+ *
+ * @param array $file Entrée typique de $_FILES['avatar']
+ */
+function auth_update_avatar(int $userId, array $file): string
+{
+    auth_ensure_user_columns();
+
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Échec du téléversement. Réessayez.');
+    }
+
+    if (($file['size'] ?? 0) > 2 * 1024 * 1024) {
+        throw new RuntimeException('Image trop lourde (2 Mo max).');
+    }
+
+    $tmp = (string) ($file['tmp_name'] ?? '');
+    if ($tmp === '' || !is_uploaded_file($tmp)) {
+        throw new RuntimeException('Fichier invalide.');
+    }
+
+    $info = @getimagesize($tmp);
+    if ($info === false) {
+        throw new RuntimeException('Le fichier n’est pas une image valide.');
+    }
+
+    $mimeMap = [
+        IMAGETYPE_JPEG => ['jpg', 'image/jpeg'],
+        IMAGETYPE_PNG => ['png', 'image/png'],
+        IMAGETYPE_WEBP => ['webp', 'image/webp'],
+        IMAGETYPE_GIF => ['gif', 'image/gif'],
+    ];
+    $type = (int) ($info[2] ?? 0);
+    if (!isset($mimeMap[$type])) {
+        throw new RuntimeException('Formats acceptés : JPG, PNG, WEBP, GIF.');
+    }
+
+    [$ext] = $mimeMap[$type];
+    $dir = dirname(__DIR__) . '/assets/uploads/avatars';
+    if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+        throw new RuntimeException('Impossible de créer le dossier avatars.');
+    }
+
+    // Supprimer les anciennes variantes
+    foreach (glob($dir . '/' . $userId . '.*') ?: [] as $old) {
+        @unlink($old);
+    }
+
+    $filename = $userId . '.' . $ext;
+    $dest = $dir . '/' . $filename;
+    if (!move_uploaded_file($tmp, $dest)) {
+        throw new RuntimeException('Impossible d’enregistrer l’image.');
+    }
+
+    $relative = 'uploads/avatars/' . $filename;
+    $stmt = db()->prepare('UPDATE users SET avatar = :avatar WHERE id = :id');
+    $stmt->execute(['avatar' => $relative, 'id' => $userId]);
+
+    $user = auth_user();
+    if ($user !== null && (int) $user['id'] === $userId) {
+        auth_start();
+        $_SESSION['user']['avatar'] = $relative;
+    }
+
+    return $relative;
+}
+
+function auth_avatar_url(?array $user): string
+{
+    $avatar = trim((string) ($user['avatar'] ?? ''));
+    if ($avatar === '') {
+        return '';
+    }
+
+    return media_url($avatar);
+}
+
+function auth_avatar_initials(?array $user): string
+{
+    $name = trim((string) ($user['name'] ?? ''));
+    if ($name === '') {
+        return '?';
+    }
+
+    $parts = preg_split('/\s+/u', $name) ?: [];
+    $initials = '';
+    foreach (array_slice($parts, 0, 2) as $part) {
+        $initials .= mb_strtoupper(mb_substr($part, 0, 1));
+    }
+
+    return $initials !== '' ? $initials : '?';
 }
 
 function auth_update_password(int $userId, string $password): void
@@ -229,6 +323,7 @@ function auth_login(array $user): void
         'name' => (string) $user['name'],
         'email' => (string) $user['email'],
         'role' => (string) ($user['role'] ?? 'user'),
+        'avatar' => (string) ($user['avatar'] ?? ''),
     ];
 }
 
@@ -243,6 +338,27 @@ function auth_logout(): void
     }
 
     session_destroy();
+}
+
+function auth_ensure_user_columns(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    auth_ensure_role_column();
+
+    try {
+        $cols = db()->query("SHOW COLUMNS FROM users LIKE 'avatar'")->fetch();
+        if ($cols === false) {
+            db()->exec("ALTER TABLE users ADD COLUMN avatar VARCHAR(255) NOT NULL DEFAULT '' AFTER role");
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+
+    $done = true;
 }
 
 function auth_ensure_role_column(): void
@@ -266,8 +382,8 @@ function auth_ensure_role_column(): void
 
 function auth_find_by_email(string $email): ?array
 {
-    auth_ensure_role_column();
-    $stmt = db()->prepare('SELECT id, name, email, password, role FROM users WHERE email = :email LIMIT 1');
+    auth_ensure_user_columns();
+    $stmt = db()->prepare('SELECT id, name, email, password, role, avatar FROM users WHERE email = :email LIMIT 1');
     $stmt->execute(['email' => $email]);
     $row = $stmt->fetch();
 
@@ -276,17 +392,18 @@ function auth_find_by_email(string $email): ?array
 
 function auth_register(string $name, string $email, string $password): array
 {
-    auth_ensure_role_column();
+    auth_ensure_user_columns();
     $hash = password_hash($password, PASSWORD_DEFAULT);
 
     $stmt = db()->prepare(
-        'INSERT INTO users (name, email, password, role) VALUES (:name, :email, :password, :role)'
+        'INSERT INTO users (name, email, password, role, avatar) VALUES (:name, :email, :password, :role, :avatar)'
     );
     $stmt->execute([
         'name' => $name,
         'email' => $email,
         'password' => $hash,
         'role' => 'user',
+        'avatar' => '',
     ]);
 
     return [
@@ -294,6 +411,7 @@ function auth_register(string $name, string $email, string $password): array
         'name' => $name,
         'email' => $email,
         'role' => 'user',
+        'avatar' => '',
     ];
 }
 

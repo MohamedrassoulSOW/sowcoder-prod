@@ -17,6 +17,18 @@
     menu.hidden = false;
   };
 
+  const unlockItem = (item) => {
+    if (!(item instanceof HTMLElement)) return;
+    item.classList.remove("is-locked");
+    const editBtn = item.querySelector("[data-edit-row]");
+    if (editBtn instanceof HTMLButtonElement) {
+      editBtn.textContent = "Édition";
+      editBtn.disabled = true;
+    }
+    const focusable = item.querySelector("input, textarea, select");
+    if (focusable instanceof HTMLElement) focusable.focus();
+  };
+
   if (dropdown && toggle && menu) {
     toggle.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -39,9 +51,7 @@
     });
   }
 
-  const addButtons = document.querySelectorAll("[data-add-row]");
-
-  addButtons.forEach((button) => {
+  document.querySelectorAll("[data-add-row]").forEach((button) => {
     button.addEventListener("click", () => {
       const target = button.getAttribute("data-target");
       if (!target) return;
@@ -55,13 +65,23 @@
       const wrap = document.createElement("div");
       wrap.innerHTML = html.trim();
       const item = wrap.firstElementChild;
-      if (item) list.appendChild(item);
+      if (!item) return;
+
+      list.appendChild(item);
+      unlockItem(item);
     });
   });
 
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+
+    const editBtn = target.closest("[data-edit-row]");
+    if (editBtn) {
+      unlockItem(editBtn.closest("[data-editable-item]"));
+      return;
+    }
+
     const removeBtn = target.closest("[data-remove-row]");
     if (!removeBtn) return;
     const item = removeBtn.closest("[data-repeat-item]");

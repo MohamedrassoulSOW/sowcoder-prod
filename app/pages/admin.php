@@ -4,11 +4,19 @@ declare(strict_types=1);
 
 auth_require_admin();
 
+// Enregistrement sur la même URL (même onglet) — pas de page intermédiaire
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require __DIR__ . '/admin-save.php';
+    exit;
+}
+
 $adminTab = (string) ($_GET['tab'] ?? 'overview');
-$allowedTabs = ['overview', 'settings', 'hero', 'services', 'projects', 'about', 'why', 'testimonials', 'messages'];
+$allowedTabs = ['overview', 'settings', 'hero', 'services', 'projects', 'blog', 'about', 'why', 'testimonials', 'messages'];
 if (!in_array($adminTab, $allowedTabs, true)) {
     $adminTab = 'overview';
 }
+
+$adminFormAction = page_url('admin') . '&tab=' . rawurlencode($adminTab);
 
 $content = content_load();
 $settings = $content['settings'] ?? [];
@@ -29,6 +37,14 @@ try {
     $messages = [];
 }
 
+$stats = [
+    'services' => count($content['services'] ?? []),
+    'projects' => count($content['projects'] ?? []),
+    'blog' => count($content['blog'] ?? []),
+    'testimonials' => count($content['testimonials'] ?? []),
+    'messages' => $messageCount,
+];
+
 $bodyClass = 'page-admin';
 ?>
 
@@ -43,30 +59,95 @@ $bodyClass = 'page-admin';
 <?php endif; ?>
 
 <?php if ($adminTab === 'overview'): ?>
-    <div class="admin-cards">
-        <article class="admin-card">
-            <h2>Contenu du site</h2>
-            <p>Modifiez textes, services, projets et témoignages sans toucher au code.</p>
-            <a class="btn btn-primary" href="<?= e(page_url('admin') . '&tab=hero') ?>">Éditer le contenu</a>
-        </article>
-        <article class="admin-card">
-            <h2>Messages reçus</h2>
-            <p><strong><?= (int) $messageCount ?></strong> message(s) dans la boîte de contact.</p>
-            <a class="btn btn-primary" href="<?= e(page_url('admin') . '&tab=messages') ?>">Voir les messages</a>
-        </article>
-        <article class="admin-card">
-            <h2>Site public</h2>
-            <p>Prévisualisez le site tel que vos visiteurs le voient.</p>
-            <a class="btn btn-primary" href="<?= e(page_url('home')) ?>" target="_blank" rel="noopener">Ouvrir le site</a>
-        </article>
-    </div>
-    <div class="admin-hint">
-        <p>Astuce : choisissez une section dans le menu, puis cliquez sur <strong>Enregistrer</strong> après vos modifications.</p>
-    </div>
+    <section class="admin-overview">
+        <div class="admin-stat-grid">
+            <article class="admin-stat">
+                <p class="admin-stat-label">Services</p>
+                <p class="admin-stat-value"><?= (int) $stats['services'] ?></p>
+                <a href="<?= e(page_url('admin') . '&tab=services') ?>">Gérer →</a>
+            </article>
+            <article class="admin-stat">
+                <p class="admin-stat-label">Projets</p>
+                <p class="admin-stat-value"><?= (int) $stats['projects'] ?></p>
+                <a href="<?= e(page_url('admin') . '&tab=projects') ?>">Gérer →</a>
+            </article>
+            <article class="admin-stat">
+                <p class="admin-stat-label">Articles blog</p>
+                <p class="admin-stat-value"><?= (int) $stats['blog'] ?></p>
+                <a href="<?= e(page_url('admin') . '&tab=blog') ?>">Gérer →</a>
+            </article>
+            <article class="admin-stat <?= $stats['messages'] > 0 ? 'is-accent' : '' ?>">
+                <p class="admin-stat-label">Messages</p>
+                <p class="admin-stat-value"><?= (int) $stats['messages'] ?></p>
+                <a href="<?= e(page_url('admin') . '&tab=messages') ?>">Ouvrir →</a>
+            </article>
+        </div>
+
+        <div class="admin-section-block">
+            <header class="admin-section-head">
+                <h2>Raccourcis contenu</h2>
+                <p>Modifiez chaque zone du site sans toucher au code.</p>
+            </header>
+            <div class="admin-cards admin-cards-dense">
+                <a class="admin-card-link" href="<?= e(page_url('admin') . '&tab=hero') ?>">
+                    <h3>Accueil</h3>
+                    <p>Titre, texte et image du hero</p>
+                </a>
+                <a class="admin-card-link" href="<?= e(page_url('admin') . '&tab=services') ?>">
+                    <h3>Services</h3>
+                    <p><?= (int) $stats['services'] ?> service(s)</p>
+                </a>
+                <a class="admin-card-link" href="<?= e(page_url('admin') . '&tab=projects') ?>">
+                    <h3>Projets</h3>
+                    <p><?= (int) $stats['projects'] ?> réalisation(s)</p>
+                </a>
+                <a class="admin-card-link" href="<?= e(page_url('admin') . '&tab=blog') ?>">
+                    <h3>Blog</h3>
+                    <p><?= (int) $stats['blog'] ?> article(s)</p>
+                </a>
+                <a class="admin-card-link" href="<?= e(page_url('admin') . '&tab=about') ?>">
+                    <h3>À propos</h3>
+                    <p>Mission et valeurs</p>
+                </a>
+                <a class="admin-card-link" href="<?= e(page_url('admin') . '&tab=testimonials') ?>">
+                    <h3>Témoignages</h3>
+                    <p><?= (int) $stats['testimonials'] ?> avis</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="admin-section-block">
+            <header class="admin-section-head">
+                <h2>Paramètres &amp; contact</h2>
+                <p>Informations visibles sur tout le site.</p>
+            </header>
+            <div class="admin-cards">
+                <article class="admin-card">
+                    <h2>Coordonnées</h2>
+                    <p><?= e((string) ($settings['email'] ?? '—')) ?><br><?= e((string) ($settings['address'] ?? '')) ?></p>
+                    <a class="btn btn-primary" href="<?= e(page_url('admin') . '&tab=settings') ?>">Modifier</a>
+                </article>
+                <article class="admin-card">
+                    <h2>Messages contact</h2>
+                    <p><strong><?= (int) $messageCount ?></strong> message(s) reçus via le formulaire.</p>
+                    <a class="btn btn-primary" href="<?= e(page_url('admin') . '&tab=messages') ?>">Boîte de réception</a>
+                </article>
+                <article class="admin-card">
+                    <h2>Prévisualisation</h2>
+                    <p>Vérifiez le rendu public après chaque modification.</p>
+                    <a class="btn btn-primary" href="<?= e(page_url('home')) ?>" target="_blank" rel="noopener">Ouvrir le site</a>
+                </article>
+            </div>
+        </div>
+
+        <div class="admin-hint">
+            <p>Astuce : après chaque édition, cliquez sur <strong>Enregistrer</strong>, puis ouvrez le site public pour contrôler le résultat.</p>
+        </div>
+    </section>
 <?php endif; ?>
 
 <?php if ($adminTab === 'settings'): ?>
-    <form class="admin-form" method="post" action="<?= e(page_url('admin-save')) ?>">
+    <form class="admin-form" method="post" action="<?= e($adminFormAction) ?>">
         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
         <input type="hidden" name="tab" value="settings">
 
@@ -113,7 +194,7 @@ $bodyClass = 'page-admin';
                             <input name="phones[<?= (int) $i ?>][number]" value="<?= e((string) ($phone['number'] ?? '')) ?>" placeholder="+221 ...">
                         </div>
                     </div>
-                    <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                    <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -131,7 +212,7 @@ $bodyClass = 'page-admin';
                         <input name="phones[__INDEX__][number]" placeholder="+221 ...">
                     </div>
                 </div>
-                <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
             </div>
         </template>
 
@@ -155,7 +236,7 @@ $bodyClass = 'page-admin';
                             <input name="whatsapp[<?= (int) $i ?>][url]" value="<?= e((string) ($wa['url'] ?? '')) ?>" placeholder="https://wa.me/...">
                         </div>
                     </div>
-                    <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                    <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -173,7 +254,7 @@ $bodyClass = 'page-admin';
                         <input name="whatsapp[__INDEX__][url]" placeholder="https://wa.me/...">
                     </div>
                 </div>
-                <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
             </div>
         </template>
 
@@ -185,7 +266,7 @@ $bodyClass = 'page-admin';
 
 <?php if ($adminTab === 'hero'): ?>
     <?php $hero = $content['hero'] ?? []; ?>
-    <form class="admin-form" method="post" action="<?= e(page_url('admin-save')) ?>">
+    <form class="admin-form" method="post" action="<?= e($adminFormAction) ?>">
         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
         <input type="hidden" name="tab" value="hero">
         <div class="field">
@@ -225,48 +306,82 @@ $bodyClass = 'page-admin';
 <?php endif; ?>
 
 <?php if ($adminTab === 'services'): ?>
-    <form class="admin-form" method="post" action="<?= e(page_url('admin-save')) ?>">
+    <?php $iconOptions = service_icon_options(); ?>
+    <form class="admin-form" method="post" action="<?= e($adminFormAction) ?>">
         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
         <input type="hidden" name="tab" value="services">
         <div class="repeat-list" data-repeat="services">
             <?php foreach (array_values($content['services'] ?? []) as $i => $service): ?>
-                <div class="repeat-item" data-repeat-item>
-                    <div class="field">
-                        <label>Titre</label>
-                        <input name="services[<?= (int) $i ?>][title]" value="<?= e((string) ($service['title'] ?? '')) ?>">
+                <?php $currentIcon = (string) ($service['icon'] ?? 'code'); ?>
+                <div class="repeat-item is-locked" data-repeat-item data-editable-item>
+                    <div class="repeat-item-head">
+                        <p class="repeat-item-label">Service <?= (int) ($i + 1) ?></p>
+                        <div class="repeat-item-actions">
+                            <button type="button" class="btn nav-btn-ghost btn-sm" data-edit-row>Modifier</button>
+                            <button type="submit" class="btn btn-primary btn-sm" data-save-row>Enregistrer</button>
+                            <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label>Titre</label>
+                            <input name="services[<?= (int) $i ?>][title]" value="<?= e((string) ($service['title'] ?? '')) ?>">
+                        </div>
+                        <div class="field">
+                            <label>Icône</label>
+                            <select name="services[<?= (int) $i ?>][icon]">
+                                <?php foreach ($iconOptions as $value => $label): ?>
+                                    <option value="<?= e($value) ?>" <?= $currentIcon === $value ? 'selected' : '' ?>><?= e($label) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
                     <div class="field">
                         <label>Description</label>
                         <textarea name="services[<?= (int) $i ?>][description]" rows="3"><?= e((string) ($service['description'] ?? '')) ?></textarea>
                     </div>
-                    <input type="hidden" name="services[<?= (int) $i ?>][icon]" value="<?= e((string) ($service['icon'] ?? 'code')) ?>">
-                    <button type="button" class="btn-text" data-remove-row>Supprimer</button>
                 </div>
             <?php endforeach; ?>
         </div>
         <button type="button" class="btn nav-btn-ghost" data-add-row data-target="services">+ Ajouter un service</button>
         <template data-template="services">
-            <div class="repeat-item" data-repeat-item>
-                <div class="field">
-                    <label>Titre</label>
-                    <input name="services[__INDEX__][title]">
+            <div class="repeat-item" data-repeat-item data-editable-item>
+                <div class="repeat-item-head">
+                    <p class="repeat-item-label">Nouveau service</p>
+                    <div class="repeat-item-actions">
+                        <button type="button" class="btn nav-btn-ghost btn-sm" data-edit-row>Modifier</button>
+                        <button type="submit" class="btn btn-primary btn-sm" data-save-row>Enregistrer</button>
+                        <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
+                    </div>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Titre</label>
+                        <input name="services[__INDEX__][title]">
+                    </div>
+                    <div class="field">
+                        <label>Icône</label>
+                        <select name="services[__INDEX__][icon]">
+                            <?php foreach ($iconOptions as $value => $label): ?>
+                                <option value="<?= e($value) ?>" <?= $value === 'code' ? 'selected' : '' ?>><?= e($label) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="field">
                     <label>Description</label>
                     <textarea name="services[__INDEX__][description]" rows="3"></textarea>
                 </div>
-                <input type="hidden" name="services[__INDEX__][icon]" value="code">
-                <button type="button" class="btn-text" data-remove-row>Supprimer</button>
             </div>
         </template>
-        <div class="admin-actions">
-            <button class="btn btn-primary" type="submit">Enregistrer</button>
+        <div class="admin-actions admin-actions-sticky">
+            <button class="btn btn-primary" type="submit">Enregistrer tous les services</button>
         </div>
     </form>
 <?php endif; ?>
 
 <?php if ($adminTab === 'projects'): ?>
-    <form class="admin-form" method="post" action="<?= e(page_url('admin-save')) ?>">
+    <form class="admin-form" method="post" action="<?= e($adminFormAction) ?>">
         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
         <input type="hidden" name="tab" value="projects">
         <div class="repeat-list" data-repeat="projects">
@@ -290,7 +405,11 @@ $bodyClass = 'page-admin';
                             <input name="projects[<?= (int) $i ?>][year]" value="<?= e((string) ($project['year'] ?? '')) ?>">
                         </div>
                     </div>
-                    <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                    <div class="field">
+                        <label>Image (URL ou chemin assets)</label>
+                        <input name="projects[<?= (int) $i ?>][image]" value="<?= e((string) ($project['image'] ?? '')) ?>" placeholder="https://… ou images/projet.jpg">
+                    </div>
+                    <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -303,7 +422,8 @@ $bodyClass = 'page-admin';
                     <div class="field"><label>Catégorie</label><input name="projects[__INDEX__][category]"></div>
                     <div class="field"><label>Année</label><input name="projects[__INDEX__][year]"></div>
                 </div>
-                <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                <div class="field"><label>Image (URL ou chemin assets)</label><input name="projects[__INDEX__][image]" placeholder="https://… ou images/projet.jpg"></div>
+                <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
             </div>
         </template>
         <div class="admin-actions">
@@ -312,9 +432,83 @@ $bodyClass = 'page-admin';
     </form>
 <?php endif; ?>
 
+<?php if ($adminTab === 'blog'): ?>
+    <?php
+    $blogPosts = [];
+    foreach (array_values($content['blog'] ?? []) as $post) {
+        $blogPosts[] = blog_normalize_row(is_array($post) ? $post : []);
+    }
+    ?>
+    <form class="admin-form" method="post" action="<?= e($adminFormAction) ?>">
+        <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
+        <input type="hidden" name="tab" value="blog">
+        <p class="admin-hint" style="margin-top:0;">Ajoutez ou modifiez les articles. Le slug est généré automatiquement s’il est vide. Séparez les paragraphes du contenu par une ligne vide.</p>
+        <div class="repeat-list" data-repeat="blog">
+            <?php foreach ($blogPosts as $i => $post): ?>
+                <div class="repeat-item" data-repeat-item>
+                    <div class="field">
+                        <label>Titre</label>
+                        <input name="blog[<?= (int) $i ?>][title]" value="<?= e((string) ($post['title'] ?? '')) ?>" required>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label>Slug (URL)</label>
+                            <input name="blog[<?= (int) $i ?>][slug]" value="<?= e((string) ($post['slug'] ?? '')) ?>" placeholder="mon-article">
+                        </div>
+                        <div class="field">
+                            <label>Catégorie</label>
+                            <input name="blog[<?= (int) $i ?>][category]" value="<?= e((string) ($post['category'] ?? '')) ?>">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label>Date</label>
+                            <input type="date" name="blog[<?= (int) $i ?>][date]" value="<?= e((string) ($post['date'] ?? date('Y-m-d'))) ?>">
+                        </div>
+                        <div class="field">
+                            <label>Image (URL)</label>
+                            <input name="blog[<?= (int) $i ?>][image]" value="<?= e((string) ($post['image'] ?? '')) ?>" placeholder="https://…">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Extrait</label>
+                        <textarea name="blog[<?= (int) $i ?>][excerpt]" rows="2"><?= e((string) ($post['excerpt'] ?? '')) ?></textarea>
+                    </div>
+                    <div class="field">
+                        <label>Contenu (paragraphes séparés par une ligne vide)</label>
+                        <textarea name="blog[<?= (int) $i ?>][body]" rows="8"><?= e((string) ($post['body_text'] ?? '')) ?></textarea>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <button type="button" class="btn nav-btn-ghost" data-add-row data-target="blog">+ Ajouter un article</button>
+        <template data-template="blog">
+            <div class="repeat-item" data-repeat-item>
+                <div class="field"><label>Titre</label><input name="blog[__INDEX__][title]"></div>
+                <div class="field-row">
+                    <div class="field"><label>Slug (URL)</label><input name="blog[__INDEX__][slug]" placeholder="mon-article"></div>
+                    <div class="field"><label>Catégorie</label><input name="blog[__INDEX__][category]"></div>
+                </div>
+                <div class="field-row">
+                    <div class="field"><label>Date</label><input type="date" name="blog[__INDEX__][date]" value="<?= e(date('Y-m-d')) ?>"></div>
+                    <div class="field"><label>Image (URL)</label><input name="blog[__INDEX__][image]" placeholder="https://…"></div>
+                </div>
+                <div class="field"><label>Extrait</label><textarea name="blog[__INDEX__][excerpt]" rows="2"></textarea></div>
+                <div class="field"><label>Contenu (paragraphes séparés par une ligne vide)</label><textarea name="blog[__INDEX__][body]" rows="8"></textarea></div>
+                <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
+            </div>
+        </template>
+        <div class="admin-actions">
+            <button class="btn btn-primary" type="submit">Enregistrer</button>
+            <a class="btn nav-btn-ghost" href="<?= e(page_url('blog')) ?>" target="_blank" rel="noopener">Voir le blog</a>
+        </div>
+    </form>
+<?php endif; ?>
+
 <?php if ($adminTab === 'about'): ?>
     <?php $about = $content['about'] ?? []; ?>
-    <form class="admin-form" method="post" action="<?= e(page_url('admin-save')) ?>">
+    <form class="admin-form" method="post" action="<?= e($adminFormAction) ?>">
         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
         <input type="hidden" name="tab" value="about">
         <div class="field">
@@ -337,7 +531,7 @@ $bodyClass = 'page-admin';
                         <label>Texte</label>
                         <textarea name="values[<?= (int) $i ?>][text]" rows="2"><?= e((string) ($value['text'] ?? '')) ?></textarea>
                     </div>
-                    <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                    <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -346,7 +540,7 @@ $bodyClass = 'page-admin';
             <div class="repeat-item" data-repeat-item>
                 <div class="field"><label>Titre</label><input name="values[__INDEX__][title]"></div>
                 <div class="field"><label>Texte</label><textarea name="values[__INDEX__][text]" rows="2"></textarea></div>
-                <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
             </div>
         </template>
         <div class="admin-actions">
@@ -357,7 +551,7 @@ $bodyClass = 'page-admin';
 
 <?php if ($adminTab === 'why'): ?>
     <?php $why = $content['why'] ?? []; ?>
-    <form class="admin-form" method="post" action="<?= e(page_url('admin-save')) ?>">
+    <form class="admin-form" method="post" action="<?= e($adminFormAction) ?>">
         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
         <input type="hidden" name="tab" value="why">
         <div class="field">
@@ -384,7 +578,7 @@ $bodyClass = 'page-admin';
                         <label>Description</label>
                         <textarea name="features[<?= (int) $i ?>][description]" rows="2"><?= e((string) ($feature['description'] ?? '')) ?></textarea>
                     </div>
-                    <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                    <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -393,7 +587,7 @@ $bodyClass = 'page-admin';
             <div class="repeat-item" data-repeat-item>
                 <div class="field"><label>Titre</label><input name="features[__INDEX__][title]"></div>
                 <div class="field"><label>Description</label><textarea name="features[__INDEX__][description]" rows="2"></textarea></div>
-                <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
             </div>
         </template>
         <div class="admin-actions">
@@ -403,7 +597,7 @@ $bodyClass = 'page-admin';
 <?php endif; ?>
 
 <?php if ($adminTab === 'testimonials'): ?>
-    <form class="admin-form" method="post" action="<?= e(page_url('admin-save')) ?>">
+    <form class="admin-form" method="post" action="<?= e($adminFormAction) ?>">
         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
         <input type="hidden" name="tab" value="testimonials">
         <div class="repeat-list" data-repeat="testimonials">
@@ -423,7 +617,7 @@ $bodyClass = 'page-admin';
                             <input name="testimonials[<?= (int) $i ?>][role]" value="<?= e((string) ($item['role'] ?? '')) ?>">
                         </div>
                     </div>
-                    <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                    <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -435,7 +629,7 @@ $bodyClass = 'page-admin';
                     <div class="field"><label>Nom</label><input name="testimonials[__INDEX__][name]"></div>
                     <div class="field"><label>Rôle / entreprise</label><input name="testimonials[__INDEX__][role]"></div>
                 </div>
-                <button type="button" class="btn-text" data-remove-row>Supprimer</button>
+                <button type="button" class="btn btn-danger btn-sm" data-remove-row>Supprimer</button>
             </div>
         </template>
         <div class="admin-actions">
@@ -461,12 +655,12 @@ $bodyClass = 'page-admin';
                     </p>
                     <p><strong><?= e((string) ($msg['subject'] ?: 'Sans sujet')) ?></strong></p>
                     <p><?= nl2br(e((string) $msg['message'])) ?></p>
-                    <form method="post" action="<?= e(page_url('admin-save')) ?>" onsubmit="return confirm('Supprimer ce message ?');">
+                    <form method="post" action="<?= e($adminFormAction) ?>" onsubmit="return confirm('Supprimer ce message ?');">
                         <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
                         <input type="hidden" name="tab" value="messages">
                         <input type="hidden" name="action" value="delete_message">
                         <input type="hidden" name="message_id" value="<?= (int) $msg['id'] ?>">
-                        <button type="submit" class="btn-text">Supprimer</button>
+                        <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
                     </form>
                 </article>
             <?php endforeach; ?>

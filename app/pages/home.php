@@ -56,7 +56,10 @@ $testimonials = $content['testimonials'];
         <div class="bento-services">
             <?php foreach ($services as $index => $service): ?>
                 <article class="bento-item reveal" data-reveal style="--i: <?= (int) $index ?>">
-                    <span class="service-index">0<?= $index + 1 ?></span>
+                    <div class="service-meta">
+                        <span class="service-icon" aria-hidden="true"><?= service_icon_svg((string) ($service['icon'] ?? 'code')) ?></span>
+                        <span class="service-index">0<?= $index + 1 ?></span>
+                    </div>
                     <h3><?= e($service['title']) ?></h3>
                     <p><?= e($service['description']) ?></p>
                 </article>
@@ -79,13 +82,24 @@ $testimonials = $content['testimonials'];
 
         <div class="project-list">
             <?php foreach ($projects as $project): ?>
+                <?php
+                $projectImage = trim((string) ($project['image'] ?? ''));
+                $projectImageUrl = $projectImage !== '' ? media_url($projectImage) : '';
+                ?>
                 <article class="project-card reveal" data-reveal>
-                    <div class="project-meta">
-                        <span class="chip"><?= e($project['category']) ?></span>
-                        <span><?= e($project['year']) ?></span>
+                    <?php if ($projectImageUrl !== ''): ?>
+                        <div class="project-media">
+                            <img src="<?= e($projectImageUrl) ?>" alt="<?= e((string) ($project['title'] ?? '')) ?>" loading="lazy" width="640" height="400">
+                        </div>
+                    <?php endif; ?>
+                    <div class="project-body">
+                        <div class="project-meta">
+                            <span class="chip"><?= e($project['category']) ?></span>
+                            <span><?= e($project['year']) ?></span>
+                        </div>
+                        <h3><?= e($project['title']) ?></h3>
+                        <p><?= e($project['description']) ?></p>
                     </div>
-                    <h3><?= e($project['title']) ?></h3>
-                    <p><?= e($project['description']) ?></p>
                 </article>
             <?php endforeach; ?>
         </div>

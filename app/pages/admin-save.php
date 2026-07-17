@@ -4,15 +4,27 @@ declare(strict_types=1);
 
 auth_require_admin();
 
+$allowedAdminTabs = ['overview', 'settings', 'hero', 'services', 'projects', 'blog', 'about', 'why', 'testimonials', 'messages'];
+
+$resolveAdminTab = static function () use ($allowedAdminTabs): string {
+    $tab = (string) ($_POST['tab'] ?? $_GET['tab'] ?? 'overview');
+    if (!in_array($tab, $allowedAdminTabs, true)) {
+        return 'overview';
+    }
+
+    return $tab;
+};
+
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-    redirect_to('admin');
+    redirect_to('admin', ['tab' => $resolveAdminTab()]);
 }
+
+$tab = $resolveAdminTab();
 
 if (!csrf_verify($_POST['_csrf'] ?? null)) {
-    redirect_to('admin', ['tab' => (string) ($_POST['tab'] ?? 'overview'), 'status' => 'csrf']);
+    redirect_to('admin', ['tab' => $tab, 'status' => 'csrf']);
 }
 
-$tab = (string) ($_POST['tab'] ?? 'overview');
 $content = content_load();
 $action = (string) ($_POST['action'] ?? 'save');
 
@@ -93,10 +105,15 @@ try {
             if ($title === '' && $description === '') {
                 continue;
             }
+            $icon = trim((string) ($row['icon'] ?? 'code'));
+            $allowedIcons = array_keys(service_icon_options());
+            if (!in_array($icon, $allowedIcons, true)) {
+                $icon = 'code';
+            }
             $services[] = [
                 'title' => $title,
                 'description' => $description,
-                'icon' => trim((string) ($row['icon'] ?? 'code')),
+                'icon' => $icon,
             ];
         }
         $content['services'] = $services;
@@ -117,9 +134,34 @@ try {
                 'description' => trim((string) ($row['description'] ?? '')),
                 'category' => trim((string) ($row['category'] ?? '')),
                 'year' => trim((string) ($row['year'] ?? '')),
+                'image' => trim((string) ($row['image'] ?? '')),
             ];
         }
         $content['projects'] = $projects;
+    }
+
+    if ($tab === 'blog') {
+        $posts = [];
+        foreach ((array) ($_POST['blog'] ?? []) as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $title = trim((string) ($row['title'] ?? ''));
+            if ($title === '') {
+                continue;
+            }
+            $bodyText = trim((string) ($row['body'] ?? ''));
+            $posts[] = [
+                'title' => $title,
+                'slug' => trim((string) ($row['slug'] ?? '')),
+                'excerpt' => trim((string) ($row['excerpt'] ?? '')),
+                'category' => trim((string) ($row['category'] ?? '')),
+                'date' => trim((string) ($row['date'] ?? date('Y-m-d'))),
+                'image' => trim((string) ($row['image'] ?? '')),
+                'body' => $bodyText,
+            ];
+        }
+        $content['blog'] = $posts;
     }
 
     if ($tab === 'about') {
